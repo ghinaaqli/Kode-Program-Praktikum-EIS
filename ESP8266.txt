@@ -1,0 +1,54 @@
+#include <ESP32Servo.h>  // Library untuk mengendalikan servo pada ESP32
+#include <DHT.h>  // Library untuk sensor suhu dan kelembaban
+
+#define DHTPIN 5  // Pin data sensor DHT
+#define DHTTYPE DHT22  // Tipe sensor DHT
+#define TRIG_PIN  2  // Pin trigger ultrasonik
+#define ECHO_PIN  4  // Pin echo ultrasonik
+#define SERVO_PIN 22  // Pin kontrol servo
+#define DISTANCE_THRESHOLD  10  // Ambang batas jarak dalam cm
+
+DHT dht (DHTPIN, DHTTYPE);  // Inisialisasi sensor DHT
+Servo servo;  // Inisialisasi servo
+
+float duration_us, distance_cm;  // Variabel untuk menyimpan durasi dan jarak
+
+void setup() {
+  Serial.begin (9600);  // Memulai komunikasi serial dengan baud rate 9600
+  pinMode(TRIG_PIN, OUTPUT);  // Mengatur pin trigger sebagai output
+  pinMode(ECHO_PIN, INPUT);  // Mengatur pin echo sebagai input
+  servo.attach(SERVO_PIN);  // Menghubungkan servo ke pin yang ditentukan
+  servo.write(0);  // Mengatur posisi awal servo ke 0 derajat
+  dht.begin();  // Memulai sensor DHT
+}
+
+void loop() {
+  float t = dht.readTemperature();  // Membaca suhu dari sensor DHT
+  float h = dht.readHumidity();  // Membaca kelembaban dari sensor DHT
+ 
+  digitalWrite(TRIG_PIN, HIGH);  // Mengirim pulsa tinggi ke pin trigger
+  delayMicroseconds(10);  // Tunda selama 10 mikrodetik
+  digitalWrite(TRIG_PIN, LOW);  // Matikan pulsa trigger
+
+  duration_us = pulseIn(ECHO_PIN, HIGH);  // Membaca durasi pulsa dari pin echo
+
+  distance_cm = 0.017 * duration_us;  // Menghitung jarak dalam cm berdasarkan durasi
+
+  if (distance_cm < DISTANCE_THRESHOLD)  // Jika jarak kurang dari ambang batas
+    servo.write(0);  // Putar servo ke posisi 0 derajat
+  else
+    servo.write(90);  // Putar servo ke posisi 90 derajat
+
+  Serial.println("Suhu = ");  // Menampilkan teks "Suhu = " di Serial Monitor
+  Serial.print(t);  // Menampilkan suhu di Serial Monitor
+  Serial.println(" C");  // Menampilkan satuan suhu di Serial Monitor
+  Serial.println("Kelembaban = ");  // Menampilkan teks "Kelembaban = " di Serial Monitor
+  Serial.print(h);  // Menampilkan kelembaban di Serial Monitor
+  Serial.println(" %");  // Menampilkan satuan kelembaban di Serial Monitor
+
+  Serial.print("distance: ");  // Menampilkan teks "distance: " di Serial Monitor
+  Serial.print(distance_cm);  // Menampilkan jarak di Serial Monitor
+  Serial.println(" cm");  // Menampilkan satuan jarak di Serial Monitor
+
+  delay(1000);  // Tunda selama 1 detik
+}
